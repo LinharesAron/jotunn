@@ -14,19 +14,19 @@ import (
 	"github.com/LinharesAron/jotunn/internal/utils"
 )
 
-type WokerHandler struct {
+type WorkerHandler struct {
 	throttle throttle.Throttler
 	cfg      *config.AttackConfig
 }
 
-func NewAttack(cfg *config.AttackConfig, thorttle throttle.Throttler) Worker {
-	return &WokerHandler{
+func NewAttack(cfg *config.AttackConfig, thorttler throttle.Throttler) Worker {
+	return &WorkerHandler{
 		cfg:      cfg,
-		throttle: thorttle,
+		throttle: thorttler,
 	}
 }
 
-func (w *WokerHandler) Start(id int, wg *sync.WaitGroup, input <-chan types.Attempt, shouldRetry func(types.Attempt) error) {
+func (w *WorkerHandler) Start(id int, wg *sync.WaitGroup, input <-chan types.Attempt, shouldRetry func(types.Attempt) error) {
 	defer wg.Done()
 
 	client := httpclient.Get()

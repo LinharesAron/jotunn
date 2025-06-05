@@ -102,7 +102,7 @@ func Load() *AttackConfig {
 
 	pflag.IntSliceVar(&cfg.ThrottleCodes, "throttle-status-codes", []int{429}, "List of HTTP status codes considered for throttling")
 
-	pflag.StringVar(&cfg.LogFile, "log-file", "", "Path where the log file will be writen")
+	pflag.StringVar(&cfg.LogFile, "log-file", "", "Path where the log file will be written")
 	pflag.StringVar(&cfg.Proxy, "proxy", "", "Proxy to use for requests (e.g. http://127.0.0.1:8080)")
 
 	pflag.BoolVar(&cfg.UseTor, "tor", false, "Route all traffic through Tor (overrides --proxy with socks5://127.0.0.1:9050)")

@@ -28,6 +28,9 @@ func Init(proxyAddr string, insecure bool) error {
 	initOnce.Do(func() {
 		client = &http.Client{
 			Timeout: 30 * time.Second,
+			CheckRedirect: func(req *http.Request, via []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
 		}
 		err = ResetTransport(proxyAddr, insecure)
 	})

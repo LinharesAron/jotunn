@@ -37,6 +37,7 @@ func (w *WorkerHandler) Start(id int, wg *sync.WaitGroup, input <-chan types.Att
 		if err != nil {
 			ui.GetUI().SendProgressEvent(ui.Error)
 			if utils.IsTimeoutOrConnectionError(err) || w.cfg.IsThrottlingStatus(statusCode) {
+				logger.Warn("[Worker %d] Error Timeout or Throttling %s:%s – [Status Code: %d] → %s", id, attempt.Username, attempt.Password, statusCode, err)
 				w.throttle.Trigger()
 				if err := shouldRetry(attempt); err == nil {
 					ui.GetUI().SendProgressEvent(ui.Retry)

@@ -16,9 +16,15 @@ func ExecuteAttempt(client *http.Client, cfg *config.AttackConfig, attempt types
 		"^USER^": attempt.Username,
 		"^PASS^": attempt.Password,
 	}
+	var (
+		cookies    string
+		statusCode int
+		csrfToken  string
+		err        error
+	)
 
 	if cfg.CSRFField != "" {
-		statusCode, csrfToken, err := utils.RetrieveCSRFToken(client, cfg.CSRFField, cfg.CSRFSourceURL)
+		statusCode, csrfToken, cookies, err = utils.RetrieveCSRFToken(client, cfg.CSRFField, cfg.CSRFSourceURL)
 		if err != nil {
 			return false, statusCode, err
 		}
@@ -43,6 +49,10 @@ func ExecuteAttempt(client *http.Client, cfg *config.AttackConfig, attempt types
 		return false, -1, err
 	}
 
+	if cookies != "" {
+		req.Header.Set("Cookie", cookies)
+	}
+
 	for k, v := range cfg.Headers {
 		req.Header.Set(k, v)
 	}
@@ -59,9 +69,9 @@ func ExecuteAttempt(client *http.Client, cfg *config.AttackConfig, attempt types
 	}
 
 	body := string(bodyBytes)
-	statusCode := resp.StatusCode
+	statusCode = resp.StatusCode
 
-	valid, err := isValidResponse(cfg, body, statusCode)
+	valid, err := isValidResponse(cfg, resp.Header, body, statusCode)
 	if err != nil {
 		return false, statusCode, err
 	}
@@ -72,21 +82,40 @@ func isValidStatusCode(statusCode int) bool {
 	return statusCode >= 200 && statusCode < 400
 }
 
-func isValidResponse(cfg *config.AttackConfig, body string, statusCode int) (bool, error) {
+func isValidResponse(cfg *config.AttackConfig, header http.Header, body string, statusCode int) (bool, error) {
 	keyword := cfg.Keyword()
-	containsKeyword := strings.Contains(body, keyword)
+	containsKeywordBody := strings.Contains(body, keyword)
 
-	if cfg.IsSuccessKeyword {
-		return containsKeyword, nil
-	}
+	containsKeywordHeader := false
+	for k, values := range header {
+		if strings.Contains(k, keyword) {
+			containsKeywordHeader = true
+			break
+		}
 
-	if containsKeyword {
-		return false, nil
+		for _, v := range values {
+			if strings.Contains(v, keyword) {
+				containsKeywordHeader = true
+				break
+			}
+		}
+
+		if containsKeywordHeader {
+			break
+		}
 	}
 
 	validStatusCode := isValidStatusCode(statusCode)
 	if !validStatusCode {
 		return false, &InvalidStatusCode{statusCode}
+	}
+
+	if cfg.IsSuccessKeyword {
+		return containsKeywordBody || containsKeywordHeader, nil
+	}
+
+	if containsKeywordBody || containsKeywordHeader {
+		return false, nil
 	}
 
 	return true, nil
